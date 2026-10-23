@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { 
+  X, 
+  Loader2, 
+  User, 
+  Phone, 
+  Mail, 
+  BookOpen, 
+  Globe, 
+  UserCheck, 
+  AlertCircle,
+  Sparkles
+} from 'lucide-react';
 import type { Lead, LeadSource, LeadStatus, Profile } from '../../types/crm.types';
 
 interface LeadModalProps {
@@ -42,6 +53,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
   const [lostReason, setLostReason] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -67,6 +79,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
       setLostReason('');
     }
     setErrors({});
+    setHasSubmitted(false);
   }, [initialData, isOpen, currentUserId, profiles]);
 
   if (!isOpen) return null;
@@ -76,23 +89,25 @@ export const LeadModal: React.FC<LeadModalProps> = ({
 
     if (!fullName.trim()) {
       errs.fullName = 'Student full name is required.';
+    } else if (fullName.trim().length < 2) {
+      errs.fullName = 'Name must be at least 2 characters.';
     }
 
     if (!phone.trim()) {
       errs.phone = 'Contact phone number is required.';
-    } else if (phone.trim().length < 8) {
+    } else if (phone.trim().replace(/\D/g, '').length < 8) {
       errs.phone = 'Please enter a valid phone number (at least 8 digits).';
     }
 
     if (email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
-        errs.email = 'Please enter a valid email address.';
+        errs.email = 'Please enter a valid email address (e.g. name@domain.com).';
       }
     }
 
     if (status === 'Lost' && !lostReason.trim()) {
-      errs.lostReason = 'Please provide a reason when marking lead as Lost.';
+      errs.lostReason = 'Please specify a reason when marking lead as Lost.';
     }
 
     setErrors(errs);
@@ -101,6 +116,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasSubmitted(true);
     if (!validate()) return;
 
     setIsSubmitting(true);
@@ -125,52 +141,100 @@ export const LeadModal: React.FC<LeadModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose} aria-modal="true" role="dialog">
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
-            {initialData ? 'Edit Student Lead' : 'Create New Student Lead'}
-          </h3>
-          <button onClick={onClose} className="btn-ghost btn-sm" aria-label="Close modal">
-            <X size={20} />
+      <div 
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ maxWidth: '620px', borderRadius: '16px' }}
+      >
+        <div className="modal-header" style={{ padding: '1.25rem 1.75rem', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
+            }}>
+              {initialData ? <BookOpen size={20} /> : <Sparkles size={20} />}
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+                {initialData ? 'Edit Student Enquiry' : 'Register New Student Lead'}
+              </h3>
+              <p style={{ fontSize: '0.825rem', color: '#64748b', margin: 0 }}>
+                {initialData ? 'Update student communication details and preferences' : 'Capture prospective student interest and assign ownership'}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="btn-ghost btn-sm" 
+            aria-label="Close modal"
+            style={{ borderRadius: '8px', padding: '0.4rem' }}
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="modal-body" style={{ padding: '1.75rem' }}>
+            {hasSubmitted && Object.keys(errors).length > 0 && (
+              <div className="auth-error-box" role="alert" style={{ marginBottom: '1.25rem' }}>
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>Please fix the highlighted fields below before saving.</span>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label required">Student Full Name</label>
-              <input
-                type="text"
-                className={`form-input ${errors.fullName ? 'error' : ''}`}
-                placeholder="e.g. Aarav Sharma"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+              <div className="auth-input-wrapper">
+                <User size={18} className="auth-input-icon" />
+                <input
+                  type="text"
+                  className={`auth-input-field ${errors.fullName ? 'error' : ''}`}
+                  placeholder="e.g. Aarav Sharma"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  style={{ borderColor: errors.fullName ? '#ef4444' : undefined }}
+                />
+              </div>
               {errors.fullName && <div className="form-error">{errors.fullName}</div>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label required">Phone Number</label>
-                <input
-                  type="tel"
-                  className={`form-input ${errors.phone ? 'error' : ''}`}
-                  placeholder="+91 98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
+                <label className="form-label required">Contact Phone</label>
+                <div className="auth-input-wrapper">
+                  <Phone size={18} className="auth-input-icon" />
+                  <input
+                    type="tel"
+                    className={`auth-input-field ${errors.phone ? 'error' : ''}`}
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{ borderColor: errors.phone ? '#ef4444' : undefined }}
+                  />
+                </div>
                 {errors.phone && <div className="form-error">{errors.phone}</div>}
               </div>
 
               <div className="form-group">
                 <label className="form-label">Email Address (Optional)</label>
-                <input
-                  type="email"
-                  className={`form-input ${errors.email ? 'error' : ''}`}
-                  placeholder="student@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="auth-input-wrapper">
+                  <Mail size={18} className="auth-input-icon" />
+                  <input
+                    type="email"
+                    className={`auth-input-field ${errors.email ? 'error' : ''}`}
+                    placeholder="student@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{ borderColor: errors.email ? '#ef4444' : undefined }}
+                  />
+                </div>
                 {errors.email && <div className="form-error">{errors.email}</div>}
               </div>
             </div>
@@ -178,34 +242,42 @@ export const LeadModal: React.FC<LeadModalProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label required">Course Interest</label>
-                <select
-                  className="form-select"
-                  value={courseInterest}
-                  onChange={(e) => setCourseInterest(e.target.value)}
-                >
-                  {COURSES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <div className="auth-input-wrapper">
+                  <BookOpen size={18} className="auth-input-icon" />
+                  <select
+                    className="form-select auth-input-field"
+                    value={courseInterest}
+                    onChange={(e) => setCourseInterest(e.target.value)}
+                    style={{ paddingLeft: '2.65rem' }}
+                  >
+                    {COURSES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label required">Enquiry Source</label>
-                <select
-                  className="form-select"
-                  value={source}
-                  onChange={(e) => setSource(e.target.value as LeadSource)}
-                >
-                  {SOURCES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <label className="form-label required">Enquiry Channel / Source</label>
+                <div className="auth-input-wrapper">
+                  <Globe size={18} className="auth-input-icon" />
+                  <select
+                    className="form-select auth-input-field"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value as LeadSource)}
+                    style={{ paddingLeft: '2.65rem' }}
+                  >
+                    {SOURCES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label required">Status</label>
+                <label className="form-label required">Initial Status</label>
                 <select
                   className="form-select"
                   value={status}
@@ -218,19 +290,23 @@ export const LeadModal: React.FC<LeadModalProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Assigned Counsellor</label>
-                <select
-                  className="form-select"
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                >
-                  <option value="">-- Unassigned --</option>
-                  {profiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.full_name} ({p.role})
-                    </option>
-                  ))}
-                </select>
+                <label className="form-label">Assign to Counsellor</label>
+                <div className="auth-input-wrapper">
+                  <UserCheck size={18} className="auth-input-icon" />
+                  <select
+                    className="form-select auth-input-field"
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    style={{ paddingLeft: '2.65rem' }}
+                  >
+                    <option value="">-- Unassigned --</option>
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name} ({p.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -248,30 +324,44 @@ export const LeadModal: React.FC<LeadModalProps> = ({
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label">Notes & Conversation Background</label>
-              <textarea
-                className="form-textarea"
-                rows={3}
-                placeholder="Key details from initial enquiry, student questions, schedule constraints..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Conversation Background & Notes</label>
+              <div style={{ position: 'relative' }}>
+                <textarea
+                  className="form-textarea"
+                  rows={3}
+                  placeholder="Details from enquiry call, educational background, questions about curriculum..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  style={{ borderRadius: '10px' }}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>
+          <div className="modal-footer" style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid #e2e8f0' }}>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="btn btn-secondary" 
+              disabled={isSubmitting}
+              style={{ borderRadius: '8px' }}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={isSubmitting}
+              style={{ borderRadius: '8px', minWidth: '130px' }}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
-                <span>{initialData ? 'Update Lead' : 'Save Lead'}</span>
+                <span>{initialData ? 'Update Lead' : 'Save Student Lead'}</span>
               )}
             </button>
           </div>
