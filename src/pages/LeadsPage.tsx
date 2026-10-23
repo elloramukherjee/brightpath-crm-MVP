@@ -558,29 +558,49 @@ export const LeadsPage: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    {/* Quick status dropdown selector */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <LeadStatusBadge status={lead.status} />
-                      <select 
-                        value={lead.status}
-                        onChange={(e) => handleStatusChangeClick(lead, e.target.value as LeadStatus)}
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '2px 4px',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '4px',
-                          backgroundColor: 'transparent',
-                          color: 'var(--color-text-muted)',
-                          cursor: 'pointer'
-                        }}
-                        aria-label={`Change status for ${lead.full_name}`}
-                      >
-                        <option value="New">New</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Qualified">Qualified</option>
-                        <option value="Converted">Converted</option>
-                        <option value="Lost">Lost</option>
-                      </select>
+                    {/* Quick status dropdown selector with lost reason subtitle */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <LeadStatusBadge status={lead.status} />
+                        <select 
+                          value={lead.status}
+                          onChange={(e) => handleStatusChangeClick(lead, e.target.value as LeadStatus)}
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '2px 4px',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '4px',
+                            backgroundColor: 'transparent',
+                            color: 'var(--color-text-muted)',
+                            cursor: 'pointer'
+                          }}
+                          aria-label={`Change status for ${lead.full_name}`}
+                        >
+                          <option value="New">New</option>
+                          <option value="Contacted">Contacted</option>
+                          <option value="Qualified">Qualified</option>
+                          <option value="Converted">Converted</option>
+                          <option value="Lost">Lost</option>
+                        </select>
+                      </div>
+                      {lead.status === 'Lost' && lead.lost_reason && (
+                        <span 
+                          style={{ 
+                            fontSize: '0.725rem', 
+                            color: '#be123c', 
+                            backgroundColor: '#ffe4e6', 
+                            padding: '1px 6px', 
+                            borderRadius: '4px', 
+                            maxWidth: '180px', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap' 
+                          }} 
+                          title={lead.lost_reason}
+                        >
+                          {lead.lost_reason}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td>

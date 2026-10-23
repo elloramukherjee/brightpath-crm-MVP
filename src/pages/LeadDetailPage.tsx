@@ -14,7 +14,12 @@ import {
   Trash2, 
   CheckCircle2, 
   AlertTriangle,
-  Loader2 
+  Loader2,
+  Check,
+  ArrowRight,
+  RotateCcw,
+  Award,
+  XCircle
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { followUpService } from '../services/followUpService';
@@ -27,6 +32,13 @@ import { LeadStatusModal } from '../components/leads/LeadStatusModal';
 import { FollowUpModal } from '../components/followups/FollowUpModal';
 import { ActivityTimeline } from '../components/activity/ActivityTimeline';
 import type { Lead, FollowUp, Activity, LeadStatus, Profile } from '../types/crm.types';
+
+const PIPELINE_STAGES: { status: LeadStatus; label: string; desc: string }[] = [
+  { status: 'New', label: '1. New Enquiry', desc: 'Logged' },
+  { status: 'Contacted', label: '2. Contacted', desc: 'Call / Email' },
+  { status: 'Qualified', label: '3. Qualified', desc: 'Academic Fit' },
+  { status: 'Converted', label: '4. Converted', desc: 'Enrolled' }
+];
 
 export const LeadDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -295,34 +307,196 @@ export const LeadDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick status progress bar / buttons */}
-        <div style={{ 
-          marginTop: '1.5rem', 
-          paddingTop: '1.25rem', 
-          borderTop: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '0.5rem' }}>
-            Set Status:
-          </span>
-          {(['New', 'Contacted', 'Qualified', 'Converted', 'Lost'] as LeadStatus[]).map((st) => (
-            <button
-              key={st}
-              onClick={() => handleStatusChangeClick(st)}
-              className={`btn btn-sm ${lead.status === st ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ 
-                fontSize: '0.8rem',
-                padding: '0.25rem 0.65rem',
-                borderColor: lead.status === st ? undefined : 'var(--color-border)'
-              }}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
+        {/* Visual Pipeline Funnel Stepper */}
+        {(() => {
+          const currentStageIndex = PIPELINE_STAGES.findIndex((s) => s.status === lead.status);
+          const isLost = lead.status === 'Lost';
+          const progressPercent = isLost
+            ? 0
+            : currentStageIndex >= 0
+            ? (currentStageIndex / (PIPELINE_STAGES.length - 1)) * 100
+            : 0;
+
+          return (
+            <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Admissions Pipeline Stage:
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  {isLost ? 'Enquiry Inactive (Lost)' : `Stage ${Math.max(1, currentStageIndex + 1)} of 4: ${lead.status}`}
+                </span>
+              </div>
+
+              <div className="pipeline-stepper">
+                <div className="stepper-track-line">
+                  <div className="stepper-track-fill" style={{ width: `${progressPercent}%` }} />
+                </div>
+
+                {PIPELINE_STAGES.map((stage, idx) => {
+                  let stageState = 'upcoming';
+                  if (isLost) {
+                    stageState = 'upcoming';
+                  } else if (idx < currentStageIndex) {
+                    stageState = 'completed';
+                  } else if (idx === currentStageIndex) {
+                    stageState = 'active';
+                  }
+
+                  return (
+                    <div key={stage.status} className={`stepper-stage ${stageState}`}>
+                      <div className="stepper-circle">
+                        {stageState === 'completed' ? (
+                          <Check size={18} strokeWidth={3} />
+                        ) : (
+                          <span>{idx + 1}</span>
+                        )}
+                      </div>
+                      <div className="stepper-label">{stage.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Lost Lead Special Banner */}
+              {isLost && (
+                <div className="lost-lead-banner">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#991b1b', fontSize: '0.95rem' }}>
+                        Enquiry Marked as Lost
+                        {lead.lost_reason && (
+                          <span className="lost-lead-reason-tag">
+                            Reason: {lead.lost_reason}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#b91c1c', marginTop: '0.2rem' }}>
+                        Recorded reason: "{lead.lost_reason || 'Unspecified'}"
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleStatusChangeClick('Contacted')} 
+                    className="btn btn-secondary btn-sm"
+                    style={{ borderColor: '#fca5a5', color: '#991b1b', backgroundColor: '#ffffff', borderRadius: '8px' }}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Reopen Enquiry (Move to Contacted)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Context-Aware Action Advance Buttons */}
+              <div style={{ 
+                marginTop: '1.25rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.825rem', fontWeight: 600, color: '#64748b' }}>
+                    Recommended Action:
+                  </span>
+
+                  {lead.status === 'New' && (
+                    <button 
+                      onClick={() => handleStatusChangeClick('Contacted')}
+                      className="btn btn-primary btn-sm"
+                      style={{ borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      <span>Mark as Contacted</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+
+                  {lead.status === 'Contacted' && (
+                    <button 
+                      onClick={() => handleStatusChangeClick('Qualified')}
+                      className="btn btn-primary btn-sm"
+                      style={{ borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      <span>Advance to Qualified</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+
+                  {lead.status === 'Qualified' && (
+                    <button 
+                      onClick={() => handleStatusChangeClick('Converted')}
+                      className="btn btn-primary btn-sm"
+                      style={{ 
+                        borderRadius: '8px', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.4rem',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                      }}
+                    >
+                      <Award size={15} />
+                      <span>Confirm Admission (Convert Lead)</span>
+                    </button>
+                  )}
+
+                  {lead.status === 'Converted' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#065f46', fontWeight: 700, fontSize: '0.875rem' }}>
+                      <CheckCircle2 size={16} color="#10b981" />
+                      <span>Admission Confirmed & Enrolled!</span>
+                    </div>
+                  )}
+
+                  {lead.status !== 'Lost' && (
+                    <button 
+                      onClick={() => handleStatusChangeClick('Lost')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ borderRadius: '8px', color: '#dc2626', borderColor: '#fca5a5' }}
+                    >
+                      <XCircle size={14} />
+                      <span>Mark as Lost</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Override Dropdown */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.775rem', color: '#94a3b8' }}>Jump to:</span>
+                  <select 
+                    className="form-select"
+                    value={lead.status}
+                    onChange={(e) => handleStatusChangeClick(e.target.value as LeadStatus)}
+                    style={{ width: 'auto', fontSize: '0.8rem', padding: '0.25rem 0.6rem', height: '32px' }}
+                  >
+                    <option value="New">New</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Qualified">Qualified</option>
+                    <option value="Converted">Converted</option>
+                    <option value="Lost">Lost</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Notes preview if available */}
         {lead.notes && (
