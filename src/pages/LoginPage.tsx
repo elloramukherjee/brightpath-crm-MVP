@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, ArrowRight, AlertCircle, UserPlus, LogIn, Loader2 } from 'lucide-react';
+import { 
+  GraduationCap, 
+  ArrowRight, 
+  AlertCircle, 
+  Mail, 
+  Lock, 
+  User, 
+  Eye, 
+  EyeOff, 
+  Loader2,
+  TrendingUp,
+  ShieldCheck,
+  CheckCircle2
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -8,6 +21,7 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -21,26 +35,31 @@ export const LoginPage: React.FC = () => {
     setErrorMsg(null);
 
     if (!email.trim() || !password.trim()) {
-      setErrorMsg('Please enter both email and password.');
+      setErrorMsg('Please enter both your work email and password.');
       return;
     }
 
     if (isSignUp && !fullName.trim()) {
-      setErrorMsg('Please provide your full name.');
+      setErrorMsg('Please enter your full name for your staff profile.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       if (isSignUp) {
-        const res = await signUp(email, password, fullName);
+        const res = await signUp(email.trim(), password, fullName.trim());
         if (res && res.error) {
           setErrorMsg(res.error);
           setIsSubmitting(false);
           return;
         }
       } else {
-        const res = await signIn(email, password);
+        const res = await signIn(email.trim(), password);
         if (res && res.error) {
           setErrorMsg(res.error);
           setIsSubmitting(false);
@@ -49,7 +68,7 @@ export const LoginPage: React.FC = () => {
       }
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const msg = err instanceof Error ? err.message : 'An unexpected authentication error occurred.';
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
@@ -57,189 +76,215 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'var(--color-bg-app)',
-      padding: '1.5rem'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '460px',
-        backgroundColor: 'var(--color-bg-surface)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--shadow-xl)',
-        padding: '2.5rem 2rem'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            margin: '0 auto 1rem',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
-          }}>
-            <GraduationCap size={28} />
+    <div className="auth-split-wrapper">
+      {/* Left Pane: Bespoke Brand Showcase */}
+      <section className="auth-showcase-pane" aria-label="BrightPath Academy Brand Overview">
+        <div className="auth-brand-logo">
+          <div className="auth-logo-badge">
+            <GraduationCap size={24} />
           </div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>BrightPath CRM</h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-            {isSignUp ? 'Create your staff counsellor account' : 'Sign in to access your admissions portal'}
+          <div>
+            <div className="auth-brand-title">BrightPath CRM</div>
+            <div style={{ fontSize: '0.725rem', color: '#60a5fa', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Academy Admissions Portal
+            </div>
+          </div>
+        </div>
+
+        <div className="auth-showcase-hero">
+          <h1 className="auth-hero-headline">
+            Empowering coaching institutes with <span>complete pipeline clarity</span>.
+          </h1>
+          <p className="auth-hero-subtext">
+            Eliminate missed student enquiries, automate follow-up schedules, and accelerate enrollment conversion rates with end-to-end accountability.
           </p>
+
+          {/* Interactive Floating Impact Card */}
+          <div className="auth-metrics-card">
+            <div className="auth-metrics-header">
+              <span className="auth-metrics-dot" />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>Live Institute Performance</span>
+              <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <TrendingUp size={12} /> +24% YoY
+              </span>
+            </div>
+
+            <div className="auth-metrics-grid">
+              <div>
+                <div className="auth-stat-value">94.2%</div>
+                <div className="auth-stat-label">Follow-up SLA Met</div>
+              </div>
+              <div>
+                <div className="auth-stat-value">1,280+</div>
+                <div className="auth-stat-label">Students Enrolled</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '0.875rem', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CheckCircle2 size={14} color="#10b981" />
+              <span>"Zero lost enquiries since deploying BrightPath CRM."</span>
+            </div>
+          </div>
         </div>
 
-        {!isConfigured && (
-          <div style={{
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.75rem 1rem',
-            marginBottom: '1.25rem',
-            fontSize: '0.825rem',
-            color: '#1e40af'
-          }}>
-            <strong>Demo Prototype Mode:</strong> Supabase credentials are not yet configured in <code>.env</code>. Signing in will launch the demo counsellor workspace.
+        <div className="auth-showcase-footer">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+            <ShieldCheck size={16} color="#60a5fa" />
+            <span style={{ fontWeight: 600, color: '#e2e8f0' }}>Enterprise Row Level Security (RLS)</span>
           </div>
-        )}
-
-        {errorMsg && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem 1rem',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecdd3',
-            borderRadius: 'var(--radius-md)',
-            color: '#be123c',
-            fontSize: '0.875rem',
-            marginBottom: '1.25rem'
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Tab switch between Sign In and Sign Up */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'var(--color-bg-subtle)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.25rem',
-          marginBottom: '1.5rem'
-        }}>
-          <button
-            type="button"
-            onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
-            style={{
-              flex: 1,
-              padding: '0.5rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              backgroundColor: !isSignUp ? 'var(--color-bg-surface)' : 'transparent',
-              color: !isSignUp ? 'var(--color-text-main)' : 'var(--color-text-muted)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              boxShadow: !isSignUp ? 'var(--shadow-xs)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => { setIsSignUp(true); setErrorMsg(null); }}
-            style={{
-              flex: 1,
-              padding: '0.5rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              backgroundColor: isSignUp ? 'var(--color-bg-surface)' : 'transparent',
-              color: isSignUp ? 'var(--color-text-main)' : 'var(--color-text-muted)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              boxShadow: isSignUp ? 'var(--shadow-xs)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Register Account
-          </button>
+          <span>PostgreSQL boundary isolation enforcing staff role privileges.</span>
         </div>
+      </section>
 
-        <form onSubmit={handleSubmit}>
-          {isSignUp && (
-            <div className="form-group">
-              <label className="form-label required">Full Name</label>
-              <input 
-                type="text"
-                required
-                className="form-input"
-                placeholder="e.g. Ananya Deshmukh"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+      {/* Right Pane: High-Polish Interactive Form */}
+      <section className="auth-form-pane">
+        <div className="auth-card-container">
+          <div className="auth-header-group">
+            <h2 className="auth-header-title">
+              {isSignUp ? 'Create Staff Account' : 'Welcome Back'}
+            </h2>
+            <p className="auth-header-subtitle">
+              {isSignUp 
+                ? 'Join your academy team to start managing student admissions' 
+                : 'Sign in to access your student leads, schedule, and pipeline'}
+            </p>
+          </div>
+
+          {!isConfigured && (
+            <div style={{
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              marginBottom: '1.25rem',
+              fontSize: '0.825rem',
+              color: '#1e40af'
+            }}>
+              <strong>Prototype Mode:</strong> Supabase credentials are not yet configured in <code>.env</code>.
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label required">Staff Email</label>
-            <input 
-              type="email"
-              required
-              className="form-input"
-              placeholder="counsellor@brightpath.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          {errorMsg && (
+            <div className="auth-error-box" role="alert">
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Sliding Segmented Tab Pill */}
+          <div className="auth-tab-pill" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isSignUp}
+              onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
+              className={`auth-tab-btn ${!isSignUp ? 'active' : ''}`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isSignUp}
+              onClick={() => { setIsSignUp(true); setErrorMsg(null); }}
+              className={`auth-tab-btn ${isSignUp ? 'active' : ''}`}
+            >
+              Register Staff
+            </button>
           </div>
 
-          <div className="form-group">
-            <label className="form-label required">Password</label>
-            <input 
-              type="password"
-              required
-              minLength={6}
-              className="form-input"
-              placeholder="Minimum 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>{isSignUp ? 'Creating account...' : 'Signing in...'}</span>
-              </>
-            ) : (
-              <>
-                {isSignUp ? <UserPlus size={16} /> : <LogIn size={16} />}
-                <span>{isSignUp ? 'Create Staff Account' : 'Sign In'}</span>
-                <ArrowRight size={16} />
-              </>
+          <form onSubmit={handleSubmit} noValidate>
+            {isSignUp && (
+              <div className="form-group">
+                <label className="form-label required">Full Name</label>
+                <div className="auth-input-wrapper">
+                  <User size={18} className="auth-input-icon" />
+                  <input 
+                    type="text"
+                    required
+                    className="auth-input-field"
+                    placeholder="e.g. Aarav Sharma"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    autoComplete="name"
+                  />
+                </div>
+              </div>
             )}
-          </button>
-        </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
-          BrightPath Academy Admissions Management System
+            <div className="form-group">
+              <label className="form-label required">Staff Email</label>
+              <div className="auth-input-wrapper">
+                <Mail size={18} className="auth-input-icon" />
+                <input 
+                  type="email"
+                  required
+                  className="auth-input-field"
+                  placeholder="counsellor@brightpath.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
+                <label className="form-label required" style={{ margin: 0 }}>Password</label>
+                {!isSignUp && (
+                  <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 600, cursor: 'pointer' }}>
+                    Need help?
+                  </span>
+                )}
+              </div>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input 
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  className="auth-input-field"
+                  placeholder="Minimum 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="auth-submit-btn"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>{isSignUp ? 'Provisioning Account...' : 'Authenticating...'}</span>
+                </>
+              ) : (
+                <>
+                  <span>{isSignUp ? 'Create Staff Profile' : 'Sign In to Portal'}</span>
+                  <ArrowRight size={17} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>
+            New staff members default to Counsellor permissions. Role elevation is managed by Academy Administrators.
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
