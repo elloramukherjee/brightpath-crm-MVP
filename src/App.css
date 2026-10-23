@@ -49,6 +49,169 @@
 
 .search-input {
   padding-left: 2.25rem !important;
+  padding-right: 2.25rem !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  border-color: #3b82f6 !important;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  animation: searchClearFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-clear-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+@keyframes searchClearFade {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+/* Dynamic Filter Chips Bar */
+.filter-chips-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: -0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0 0.25rem;
+}
+
+.filter-chips-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.25rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 0.775rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  animation: chipEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
+}
+
+.filter-chip.chip-status {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.filter-chip.chip-source {
+  background: #fdf4ff;
+  border-color: #f0abfc;
+  color: #86198f;
+}
+
+.filter-chip.chip-counsellor {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.filter-chip.chip-search {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.filter-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  color: inherit;
+}
+
+.filter-chip-remove:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+@keyframes chipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.filter-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.5rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.results-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.results-counter-text {
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.results-counter-highlight {
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .config-banner {

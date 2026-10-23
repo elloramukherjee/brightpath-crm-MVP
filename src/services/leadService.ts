@@ -80,6 +80,29 @@ let localDemoLeads: Lead[] = [
   }
 ];
 
+const LOCAL_STORAGE_KEY = 'brightpath_local_leads';
+
+const loadLocalLeads = (): Lead[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Failed to load local leads cache', e);
+  }
+  return [...localDemoLeads];
+};
+
+const saveLocalLeads = (leads: Lead[]) => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(leads));
+  } catch (e) {
+    console.warn('Failed to save local leads cache', e);
+  }
+};
+
 export interface LeadFilterParams {
   search?: string;
   status?: LeadStatus | '';
@@ -93,9 +116,9 @@ export const leadService = {
    */
   async getLeads(filters?: LeadFilterParams): Promise<{ leads: Lead[]; error: string | null }> {
     if (!isSupabaseConfigured) {
-      let filtered = [...localDemoLeads];
-      if (filters?.search) {
-        const q = filters.search.toLowerCase();
+      let filtered = loadLocalLeads();
+      if (filters?.search && filters.search.trim()) {
+        const q = filters.search.trim().toLowerCase();
         filtered = filtered.filter(
           (l) =>
             l.full_name.toLowerCase().includes(q) ||
@@ -134,8 +157,9 @@ export const leadService = {
       if (filters?.assigned_to) {
         query = query.eq('assigned_to', filters.assigned_to);
       }
-      if (filters?.search) {
-        const s = `%${filters.search}%`;
+      if (filters?.search && filters.search.trim()) {
+        const clean = filters.search.trim().replace(/[%_]/g, '');
+        const s = `%${clean}%`;
         query = query.or(`full_name.ilike.${s},email.ilike.${s},phone.ilike.${s},course_interest.ilike.${s}`);
       }
 
@@ -157,7 +181,7 @@ export const leadService = {
    */
   async getLeadById(id: string): Promise<{ lead: Lead | null; error: string | null }> {
     if (!isSupabaseConfigured) {
-      const found = localDemoLeads.find((l) => l.id === id) || null;
+      const found = loadLocalLeads().find((l) => l.id === id) || null;
       return { lead: found, error: null };
     }
 
@@ -187,13 +211,15 @@ export const leadService = {
     actorId?: string
   ): Promise<{ lead: Lead | null; error: string | null }> {
     if (!isSupabaseConfigured) {
+      const current = loadLocalLeads();
       const newLead: Lead = {
         ...leadData,
         id: `demo-${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      localDemoLeads.unshift(newLead);
+      current.unshift(newLead);
+      saveLocalLeads(current);
       return { lead: newLead, error: null };
     }
 
@@ -243,14 +269,16 @@ export const leadService = {
     actorId?: string
   ): Promise<{ lead: Lead | null; error: string | null }> {
     if (!isSupabaseConfigured) {
-      const idx = localDemoLeads.findIndex((l) => l.id === id);
+      const current = loadLocalLeads();
+      const idx = current.findIndex((l) => l.id === id);
       if (idx !== -1) {
-        localDemoLeads[idx] = {
-          ...localDemoLeads[idx],
+        current[idx] = {
+          ...current[idx],
           ...updates,
           updated_at: new Date().toISOString()
         };
-        return { lead: localDemoLeads[idx], error: null };
+        saveLocalLeads(current);
+        return { lead: current[idx], error: null };
       }
       return { lead: null, error: 'Lead not found.' };
     }
@@ -296,7 +324,8 @@ export const leadService = {
    */
   async deleteLead(id: string): Promise<{ success: boolean; error: string | null }> {
     if (!isSupabaseConfigured) {
-      localDemoLeads = localDemoLeads.filter((l) => l.id !== id);
+      const current = loadLocalLeads().filter((l) => l.id !== id);
+      saveLocalLeads(current);
       return { success: true, error: null };
     }
 

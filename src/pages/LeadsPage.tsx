@@ -13,7 +13,8 @@ import {
   BookOpen, 
   Calendar,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { authService } from '../services/authService';
@@ -28,9 +29,11 @@ export const LeadsPage: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState<LeadSource | ''>('');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('');
@@ -45,13 +48,21 @@ export const LeadsPage: React.FC = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // 300ms Debounce effect on search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
       const [leadsRes, staffList] = await Promise.all([
         leadService.getLeads({
-          search: searchTerm,
+          search: debouncedSearchTerm,
           status: statusFilter,
           source: sourceFilter,
           assigned_to: assigneeFilter
@@ -63,6 +74,10 @@ export const LeadsPage: React.FC = () => {
         setErrorMsg(leadsRes.error);
       } else {
         setLeads(leadsRes.leads);
+        // If no filters active, update baseline totalCount
+        if (!debouncedSearchTerm && !statusFilter && !sourceFilter && !assigneeFilter) {
+          setTotalCount(leadsRes.leads.length);
+        }
       }
       setProfiles(staffList);
     } catch {
@@ -70,7 +85,7 @@ export const LeadsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, statusFilter, sourceFilter, assigneeFilter]);
+  }, [debouncedSearchTerm, statusFilter, sourceFilter, assigneeFilter]);
 
   useEffect(() => {
     loadData();
@@ -91,12 +106,47 @@ export const LeadsPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+  };
+
   const handleResetFilters = () => {
     setSearchTerm('');
+    setDebouncedSearchTerm('');
     setStatusFilter('');
     setSourceFilter('');
     setAssigneeFilter('');
   };
+
+  const handleRemoveFilter = (filterKey: 'search' | 'status' | 'source' | 'assignee') => {
+    switch (filterKey) {
+      case 'search':
+        setSearchTerm('');
+        setDebouncedSearchTerm('');
+        break;
+      case 'status':
+        setStatusFilter('');
+        break;
+      case 'source':
+        setSourceFilter('');
+        break;
+      case 'assignee':
+        setAssigneeFilter('');
+        break;
+    }
+  };
+
+  // Active filter indicators
+  const activeFiltersCount = [
+    Boolean(debouncedSearchTerm.trim()),
+    Boolean(statusFilter),
+    Boolean(sourceFilter),
+    Boolean(assigneeFilter)
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFiltersCount > 0;
+  const currentAssigneeName = profiles.find((p) => p.id === assigneeFilter)?.full_name || 'Staff Member';
 
   const handleSaveLead = async (
     data: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'assignee'>
@@ -228,6 +278,17 @@ export const LeadsPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button 
+              type="button" 
+              onClick={handleClearSearch} 
+              className="search-clear-btn"
+              title="Clear search query"
+              aria-label="Clear search input"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
 
         <select 
@@ -273,11 +334,110 @@ export const LeadsPage: React.FC = () => {
           </select>
         )}
 
-        {(searchTerm || statusFilter || sourceFilter || assigneeFilter) && (
-          <button onClick={handleResetFilters} className="btn btn-secondary btn-sm" title="Reset all filters">
-            <RotateCcw size={15} />
+        {hasActiveFilters && (
+          <button 
+            onClick={handleResetFilters} 
+            className="btn btn-secondary btn-sm" 
+            title="Reset all filters"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <RotateCcw size={14} />
             <span>Reset</span>
+            <span className="filter-count-badge">{activeFiltersCount}</span>
           </button>
+        )}
+      </div>
+
+      {/* Dynamic Filter Chips Bar */}
+      {hasActiveFilters && (
+        <div className="filter-chips-bar">
+          <span className="filter-chips-label">Active Filters:</span>
+          
+          {debouncedSearchTerm.trim() && (
+            <span className="filter-chip chip-search">
+              <span>Keyword: "{debouncedSearchTerm}"</span>
+              <button 
+                type="button" 
+                onClick={() => handleRemoveFilter('search')} 
+                className="filter-chip-remove"
+                aria-label="Remove search filter"
+              >
+                <X size={13} />
+              </button>
+            </span>
+          )}
+
+          {statusFilter && (
+            <span className="filter-chip chip-status">
+              <span>Status: {statusFilter}</span>
+              <button 
+                type="button" 
+                onClick={() => handleRemoveFilter('status')} 
+                className="filter-chip-remove"
+                aria-label="Remove status filter"
+              >
+                <X size={13} />
+              </button>
+            </span>
+          )}
+
+          {sourceFilter && (
+            <span className="filter-chip chip-source">
+              <span>Source: {sourceFilter}</span>
+              <button 
+                type="button" 
+                onClick={() => handleRemoveFilter('source')} 
+                className="filter-chip-remove"
+                aria-label="Remove source filter"
+              >
+                <X size={13} />
+              </button>
+            </span>
+          )}
+
+          {assigneeFilter && (
+            <span className="filter-chip chip-counsellor">
+              <span>Counsellor: {currentAssigneeName}</span>
+              <button 
+                type="button" 
+                onClick={() => handleRemoveFilter('assignee')} 
+                className="filter-chip-remove"
+                aria-label="Remove counsellor filter"
+              >
+                <X size={13} />
+              </button>
+            </span>
+          )}
+
+          <button 
+            type="button" 
+            onClick={handleResetFilters}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              fontSize: '0.775rem', 
+              color: '#ef4444', 
+              fontWeight: 600, 
+              cursor: 'pointer', 
+              textDecoration: 'underline',
+              marginLeft: '0.25rem' 
+            }}
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* Results Counter Meta Header */}
+      <div className="results-meta-header">
+        <div className="results-counter-text">
+          Showing <span className="results-counter-highlight">{leads.length}</span>
+          {totalCount > 0 && <span> of {totalCount}</span>} student {leads.length === 1 ? 'enquiry' : 'enquiries'}
+        </div>
+        {hasActiveFilters && (
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            Filtered by {activeFiltersCount} {activeFiltersCount === 1 ? 'criterion' : 'criteria'}
+          </div>
         )}
       </div>
 
@@ -329,17 +489,28 @@ export const LeadsPage: React.FC = () => {
                     </div>
                     <h4 className="empty-state-title">No leads match your criteria</h4>
                     <p className="empty-state-text">
-                      {searchTerm || statusFilter || sourceFilter || assigneeFilter
-                        ? 'Try clearing your filters or search keywords.'
+                      {hasActiveFilters
+                        ? 'Try clearing your active filters or adjusting your search keywords.'
                         : 'Get started by creating your first student enquiry lead.'}
                     </p>
-                    <button 
-                      onClick={() => { setEditingLead(null); setIsModalOpen(true); }} 
-                      className="btn btn-primary btn-sm"
-                    >
-                      <Plus size={15} />
-                      <span>Add First Lead</span>
-                    </button>
+                    {hasActiveFilters ? (
+                      <button 
+                        onClick={handleResetFilters} 
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}
+                      >
+                        <RotateCcw size={14} />
+                        <span>Clear All Filters</span>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { setEditingLead(null); setIsModalOpen(true); }} 
+                        className="btn btn-primary btn-sm"
+                      >
+                        <Plus size={15} />
+                        <span>Add First Lead</span>
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
