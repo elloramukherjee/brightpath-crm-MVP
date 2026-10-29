@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { supabase, isUsingDemoData } from '../lib/supabaseClient';
 import type { FollowUp, FollowUpStatus } from '../types/crm.types';
 
 // In-memory demo store for follow-ups
@@ -61,7 +61,7 @@ export const followUpService = {
    * Retrieves follow-ups optionally filtered by leadId or status
    */
   async getFollowUps(leadId?: string, status?: FollowUpStatus): Promise<{ followUps: FollowUp[]; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       let items = [...localDemoFollowUps];
       if (leadId) items = items.filter((f) => f.lead_id === leadId);
       if (status) items = items.filter((f) => f.status === status);
@@ -108,7 +108,7 @@ export const followUpService = {
     },
     actorId?: string
   ): Promise<{ followUp: FollowUp | null; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const newFollowUp: FollowUp = {
         id: `fup-demo-${Date.now()}`,
         lead_id: data.lead_id,
@@ -163,7 +163,7 @@ export const followUpService = {
   async completeFollowUp(id: string, actorId?: string): Promise<{ success: boolean; error: string | null }> {
     const completedAt = new Date().toISOString();
 
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const f = localDemoFollowUps.find((item) => item.id === id);
       if (f) {
         f.status = 'completed';

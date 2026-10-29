@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { supabase, isUsingDemoData } from '../lib/supabaseClient';
 import type { Activity, ActivityType } from '../types/crm.types';
 
 let localDemoActivities: Activity[] = [
@@ -89,7 +89,7 @@ export const activityService = {
    * Fetches chronological activity logs for a lead
    */
   async getActivitiesForLead(leadId: string): Promise<{ activities: Activity[]; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const filtered = localDemoActivities.filter((a) => a.lead_id === leadId);
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return { activities: filtered, error: null };
@@ -123,7 +123,7 @@ export const activityService = {
     metadata?: Record<string, unknown>,
     actorId?: string
   ): Promise<{ activity: Activity | null; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const newAct: Activity = {
         id: `act-demo-${Date.now()}`,
         lead_id: leadId,

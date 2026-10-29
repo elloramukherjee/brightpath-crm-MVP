@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { supabase, isSupabaseConfigured, isUsingDemoData } from '../lib/supabaseClient';
 import type { Profile, UserRole } from '../types/crm.types';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,22 +24,44 @@ export const authService = {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          return { profile: null, error: 'Incorrect email or password. Please verify and try again.' };
+          return { 
+            profile: null, 
+            error: 'Invalid email or password. If you have not created an account yet, please click "Register Staff" above.' 
+          };
         }
         if (error.message.includes('Email not confirmed')) {
-          return { profile: null, error: 'Email address not yet confirmed. Please verify your email inbox.' };
+          return { 
+            profile: null, 
+            error: 'Email address not yet confirmed. Please verify your email inbox or disable "Confirm email" in Supabase Auth settings.' 
+          };
         }
         return { profile: null, error: error.message };
       }
 
       if (!data.user) return { profile: null, error: 'User account not found.' };
 
+      localStorage.removeItem('brightpath_demo_user');
       const profile = await this.getProfile(data.user.id);
       return { profile, error: null };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred during sign in.';
       return { profile: null, error: message };
     }
+  },
+
+  /**
+   * Instant Demo bypass login for rapid testing or when Supabase Auth has email rate limits
+   */
+  signInAsDemo(role: UserRole = 'admin'): Profile {
+    const demoProfile: Profile = {
+      id: role === 'admin' ? '00000000-0000-0000-0000-000000000002' : '00000000-0000-0000-0000-000000000001',
+      full_name: role === 'admin' ? 'Admissions Director (Admin)' : 'Ananya Deshmukh (Counsellor)',
+      role: role,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    localStorage.setItem('brightpath_demo_user', JSON.stringify(demoProfile));
+    return demoProfile;
   },
 
   /**
@@ -71,6 +93,12 @@ export const authService = {
         if (error.message.includes('User already registered')) {
           return { profile: null, error: 'An account with this email already exists. Please sign in instead.' };
         }
+        if (error.message.toLowerCase().includes('rate limit')) {
+          return { 
+            profile: null, 
+            error: 'Supabase email rate limit exceeded (max 3 emails/hour on free tier). Fix: In your Supabase Dashboard, go to Authentication > Providers > Email, turn OFF "Confirm email", click Save, and try again. Or create the user directly under Authentication > Users.' 
+          };
+        }
         return { profile: null, error: error.message };
       }
 
@@ -99,7 +127,7 @@ export const authService = {
    * Fetches profile from public.profiles table with trigger retry mechanism
    */
   async getProfile(userId: string): Promise<Profile | null> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const stored = localStorage.getItem('brightpath_demo_user');
       return stored ? JSON.parse(stored) : null;
     }
@@ -150,7 +178,7 @@ export const authService = {
    * Fetches all staff profiles (for assignment dropdowns)
    */
   async getAllProfiles(): Promise<Profile[]> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       return [
         {
           id: '00000000-0000-0000-0000-000000000001',
@@ -190,10 +218,13 @@ export const authService = {
    * Signs out current user
    */
   async signOut(): Promise<void> {
-    if (!isSupabaseConfigured) {
-      localStorage.removeItem('brightpath_demo_user');
-      return;
+    localStorage.removeItem('brightpath_demo_user');
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Error during supabase signOut:', err);
+      }
     }
-    await supabase.auth.signOut();
   }
 };

@@ -25,7 +25,7 @@ export const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { signIn, signUp, isConfigured } = useAuth();
+  const { signIn, signUp, signInAsDemo, isConfigured } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
@@ -166,8 +166,29 @@ export const LoginPage: React.FC = () => {
 
           {errorMsg && (
             <div className="auth-error-box" role="alert">
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{errorMsg}</span>
+              <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <span>{errorMsg}</span>
+                {!isSignUp && (errorMsg.includes('Invalid') || errorMsg.includes('credentials') || errorMsg.includes('Register Staff')) && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsSignUp(true); setErrorMsg(null); }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: '#1d4ed8',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      textAlign: 'left'
+                    }}
+                  >
+                    Need an account? Click here to switch to "Register Staff" &rarr;
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -280,7 +301,83 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>
+          {/* Quick 1-Click Access Section */}
+          <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '0.5rem', 
+              marginBottom: '0.85rem' 
+            }}>
+              <span style={{ height: '1px', flex: 1, backgroundColor: '#e2e8f0' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Instant 1-Click Access (Bypass Auth)
+              </span>
+              <span style={{ height: '1px', flex: 1, backgroundColor: '#e2e8f0' }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  signInAsDemo('admin');
+                  navigate(from, { replace: true });
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <ShieldCheck size={16} color="#2563eb" />
+                <span>Admin Demo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  signInAsDemo('counsellor');
+                  navigate(from, { replace: true });
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <User size={16} color="#059669" />
+                <span>Counsellor Demo</span>
+              </button>
+            </div>
+            <div style={{ textAlign: 'center', fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+              Instant access &bull; Bypasses Supabase email rate limits
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>
             New staff members default to Counsellor permissions. Role elevation is managed by Academy Administrators.
           </div>
         </div>

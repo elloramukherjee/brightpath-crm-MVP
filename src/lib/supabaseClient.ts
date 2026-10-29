@@ -41,6 +41,10 @@ const configStatus = checkSupabaseConfig();
 export const isSupabaseConfigured = configStatus.isConfigured;
 export const configErrorMessage = configStatus.message;
 
+export const isUsingDemoData = (): boolean => {
+  return !isSupabaseConfigured || Boolean(localStorage.getItem('brightpath_demo_user'));
+};
+
 if (!isSupabaseConfigured) {
   console.warn(
     `[BrightPath CRM] Supabase not connected: ${configErrorMessage}\n` +

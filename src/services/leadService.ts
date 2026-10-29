@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { supabase, isUsingDemoData } from '../lib/supabaseClient';
 import type { Lead, LeadStatus, LeadSource } from '../types/crm.types';
 
 // In-memory demo store when Supabase is not connected yet
@@ -115,7 +115,7 @@ export const leadService = {
    * Fetches leads applying search and multi-column filters
    */
   async getLeads(filters?: LeadFilterParams): Promise<{ leads: Lead[]; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       let filtered = loadLocalLeads();
       if (filters?.search && filters.search.trim()) {
         const q = filters.search.trim().toLowerCase();
@@ -180,7 +180,7 @@ export const leadService = {
    * Fetches a single lead by its UUID
    */
   async getLeadById(id: string): Promise<{ lead: Lead | null; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const found = loadLocalLeads().find((l) => l.id === id) || null;
       return { lead: found, error: null };
     }
@@ -210,7 +210,7 @@ export const leadService = {
     leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'assignee'>,
     actorId?: string
   ): Promise<{ lead: Lead | null; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const current = loadLocalLeads();
       const newLead: Lead = {
         ...leadData,
@@ -268,7 +268,7 @@ export const leadService = {
     previousStatus?: LeadStatus,
     actorId?: string
   ): Promise<{ lead: Lead | null; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const current = loadLocalLeads();
       const idx = current.findIndex((l) => l.id === id);
       if (idx !== -1) {
@@ -323,7 +323,7 @@ export const leadService = {
    * Deletes a lead
    */
   async deleteLead(id: string): Promise<{ success: boolean; error: string | null }> {
-    if (!isSupabaseConfigured) {
+    if (isUsingDemoData()) {
       const current = loadLocalLeads().filter((l) => l.id !== id);
       saveLocalLeads(current);
       return { success: true, error: null };

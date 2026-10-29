@@ -12,6 +12,7 @@ interface AuthContextType {
   isConfigured: boolean;
   signIn: (email: string, pass: string) => Promise<{ error?: string } | void>;
   signUp: (email: string, pass: string, name: string) => Promise<{ error?: string } | void>;
+  signInAsDemo: (role?: 'admin' | 'manager' | 'counsellor') => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -29,19 +30,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(userProfile);
   };
 
+  const loadLocalDemoUser = (): boolean => {
+    const demoUser = localStorage.getItem('brightpath_demo_user');
+    if (demoUser) {
+      try {
+        const parsed = JSON.parse(demoUser);
+        setProfile(parsed);
+        setUser({ id: parsed.id, email: `${parsed.role || 'demo'}@brightpath.edu` } as User);
+        return true;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      // Load demo user if present in localStorage
-      const demoUser = localStorage.getItem('brightpath_demo_user');
-      if (demoUser) {
-        try {
-          const parsed = JSON.parse(demoUser);
-          setProfile(parsed);
-          setUser({ id: parsed.id, email: 'demo@brightpath.edu' } as User);
-        } catch (e) {
-          console.error(e);
-        }
-      }
+      loadLocalDemoUser();
       setIsLoading(false);
       return;
     }
@@ -53,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         fetchUserProfile(session.user.id).finally(() => setIsLoading(false));
       } else {
+        loadLocalDemoUser();
         setIsLoading(false);
       }
     });
@@ -94,6 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(resProfile);
   };
 
+  const signInAsDemo = (role: 'admin' | 'manager' | 'counsellor' = 'admin') => {
+    const demoProf = authService.signInAsDemo(role);
+    setProfile(demoProf);
+    setUser({ id: demoProf.id, email: `${demoProf.role}@brightpath.edu` } as User);
+  };
+
   const signOut = async () => {
     setIsLoading(true);
     await authService.signOut();
@@ -119,6 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isConfigured: isSupabaseConfigured,
         signIn,
         signUp,
+        signInAsDemo,
         signOut,
         refreshProfile,
       }}
